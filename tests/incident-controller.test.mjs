@@ -28,7 +28,7 @@ test("controller drives the governed UI/WebMCP sequence from one state source", 
   controller.closeIncident("t8");
 
   assert.equal(controller.getState().state, "INCIDENT_CLOSED");
-  assert.deepEqual(revisions, [2, 4, 5, 6, 7, 8, 9, 10]);
+  assert.deepEqual(revisions, [3, 5, 6, 7, 8, 12, 13, 14]);
 });
 
 test("controller prevents execution before authorization", () => {
@@ -56,4 +56,29 @@ test("controller exposes the same deterministic recovery metrics to UI and tools
     replicationLagSeconds: 1.2,
   });
   assert.deepEqual(first, second);
+});
+
+test("controller owns deterministic evidence, hypotheses, remediation, execution, and recovery records", () => {
+  const controller = controllerModule.createIncidentController();
+  controller.investigateIncident("t1");
+  let state = controller.registerConstraint("restart_postgresql", "t2");
+  state = controller.proposeRemediation("t3");
+  controller.requestAuthorization("t4");
+  controller.authorizeRollback("t5");
+  state = controller.executeRollingRollback("t6");
+
+  assert.deepEqual(state.evidence.map((item) => item.supports), [
+    "connection-pool misconfiguration", "excessive PostgreSQL connections", "PostgreSQL CPU pressure",
+    "checkout latency", "upstream timeouts / HTTP 502", "Redis/session pressure",
+    "PostgreSQL replication lag", "customer impact",
+  ]);
+  assert.equal(state.hypotheses.find((item) => item.role === "root_cause").status, "supported");
+  assert.equal(state.hypotheses.find((item) => item.role === "victim").status, "symptom");
+  assert.equal(state.remediationOptions.find((item) => item.action === "rolling_rollback").status, "preferred");
+  assert.deepEqual(state.rollbackProgress.map((item) => [item.node, item.rollback, item.healthCheck]), [
+    ["app-01", "completed", "passed"], ["app-02", "completed", "passed"], ["app-03", "completed", "passed"],
+  ]);
+  state = controller.verifyRecovery(undefined, "t7");
+  assert.equal(state.recoveryChecks.length, 4);
+  assert.ok(state.recoveryChecks.every((check) => check.passed));
 });

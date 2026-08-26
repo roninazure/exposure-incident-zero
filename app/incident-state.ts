@@ -38,6 +38,50 @@ export type RecoveryMetrics = {
   replicationLagSeconds: number;
 };
 
+export type EvidenceRecord = {
+  id: string;
+  sequence: number;
+  subject: string;
+  observation: string;
+  supports: string;
+  at: string;
+};
+
+export type HypothesisEvaluation = {
+  id: string;
+  label: string;
+  role: "root_cause" | "victim" | "alternative";
+  status: "supported" | "symptom" | "rejected";
+  confidence: number;
+  rationale: string;
+  evidenceIds: string[];
+};
+
+export type RemediationOption = {
+  id: string;
+  action: ActionName | "rolling_rollback";
+  label: string;
+  status: "preferred" | "prohibited" | "rejected";
+  permitted: boolean;
+  score: number;
+  rationale: string;
+};
+
+export type RollbackNode = {
+  node: "app-01" | "app-02" | "app-03";
+  rollback: "pending" | "completed";
+  healthCheck: "pending" | "passed";
+};
+
+export type RecoveryCheck = {
+  id: string;
+  metric: keyof RecoveryMetrics;
+  observed: number;
+  threshold: number;
+  operator: "lte";
+  passed: boolean;
+};
+
 export const RECOVERY_THRESHOLDS: RecoveryMetrics = {
   http502Rate: 1,
   p95LatencyMs: 500,
@@ -67,6 +111,11 @@ export type IncidentState = {
   };
   metrics: RecoveryMetrics;
   thresholds: RecoveryMetrics;
+  evidence: EvidenceRecord[];
+  hypotheses: HypothesisEvaluation[];
+  remediationOptions: RemediationOption[];
+  rollbackProgress: RollbackNode[];
+  recoveryChecks: RecoveryCheck[];
   events: IncidentEvent[];
   revision: number;
 };
@@ -87,6 +136,12 @@ const INCIDENT_METRICS: RecoveryMetrics = {
   dbConnections: 947,
   replicationLagSeconds: 42,
 };
+
+const ROLLBACK_NODES: RollbackNode[] = (["app-01", "app-02", "app-03"] as const).map((node) => ({
+  node,
+  rollback: "pending",
+  healthCheck: "pending",
+}));
 
 const ALLOWED_TRANSITIONS: Record<IncidentStateName, IncidentStateName[]> = {
   ACTIVE_INCIDENT: ["INVESTIGATED"],
@@ -142,6 +197,11 @@ export function createInitialIncidentState(): IncidentState {
     },
     metrics: { ...INCIDENT_METRICS },
     thresholds: { ...RECOVERY_THRESHOLDS },
+    evidence: [],
+    hypotheses: [],
+    remediationOptions: [],
+    rollbackProgress: ROLLBACK_NODES.map((item) => ({ ...item })),
+    recoveryChecks: [],
     events: [],
     revision: 0,
   };
@@ -153,6 +213,45 @@ export function transitionIncident(
   at = new Date().toISOString(),
 ): IncidentState {
   return withTransition(state, next, "state_transition", `${state.state} → ${next}`, at);
+}
+
+export function establishInvestigationRecords(state: IncidentState, at = new Date().toISOString()): IncidentState {
+  if (state.evidence.length > 0) return state;
+  const chain: Array<[string, string, string]> = [
+    ["checkout-api v2.8.14", "Release deployed to the checkout tier at 09:38 UTC.", "connection-pool misconfiguration"],
+    ["connection-pool misconfiguration", "Pool limits permit excessive concurrent database sessions.", "excessive PostgreSQL connections"],
+    ["excessive PostgreSQL connections", "db-primary active sessions rose from 126 to 947.", "PostgreSQL CPU pressure"],
+    ["PostgreSQL CPU pressure", "db-primary CPU reached 93% under connection pressure.", "checkout latency"],
+    ["checkout latency", "Checkout p95 latency increased to 8,400 ms.", "upstream timeouts / HTTP 502"],
+    ["upstream timeouts / HTTP 502", "HTTP 502 rate increased to 18.7%.", "Redis/session pressure"],
+    ["Redis/session pressure", "Session retries increased during failed checkout requests.", "PostgreSQL replication lag"],
+    ["PostgreSQL replication lag", "db-replica lag increased to 42 seconds.", "customer impact"],
+  ];
+  const evidence = chain.map(([subject, observation, supports], index) => ({
+    id: `evidence-${String(index + 1).padStart(2, "0")}`,
+    sequence: index + 1,
+    subject,
+    observation,
+    supports,
+    at,
+  }));
+  const hypotheses: HypothesisEvaluation[] = [
+    { id: "hypothesis-checkout-release", label: "checkout-api v2.8.14", role: "root_cause", status: "supported", confidence: 0.94, rationale: "The release precedes the pool change and every downstream signal in sequence.", evidenceIds: ["evidence-01", "evidence-02", "evidence-03"] },
+    { id: "hypothesis-postgresql", label: "PostgreSQL resource failure", role: "victim", status: "symptom", confidence: 0.21, rationale: "PostgreSQL is under downstream load; no database change caused the connection surge.", evidenceIds: ["evidence-03", "evidence-04", "evidence-08"] },
+    { id: "hypothesis-network", label: "Network degradation", role: "alternative", status: "rejected", confidence: 0.08, rationale: "No correlated packet loss or route change exists in the release window.", evidenceIds: [] },
+  ];
+  const remediationOptions: RemediationOption[] = [
+    { id: "remediation-rollback", action: "rolling_rollback", label: "Rolling rollback v2.8.14 → v2.8.13", status: "preferred", permitted: true, score: 0.96, rationale: "Removes the supported root cause without restarting the database." },
+    { id: "remediation-db-restart", action: "restart_postgresql", label: "Restart PostgreSQL", status: "prohibited", permitted: false, score: 0, rationale: "Explicitly prohibited by the human operator constraint." },
+  ];
+  return {
+    ...state,
+    evidence,
+    hypotheses,
+    remediationOptions,
+    revision: state.revision + 1,
+    events: [...state.events, event(state, "investigation_records_established", "Deterministic causal chain and hypothesis evaluations established", at)],
+  };
 }
 
 export function registerConstraint(
@@ -254,10 +353,13 @@ export function recordRollbackNode(
     throw new IncidentGuardError("ROLLBACK_NOT_ACTIVE", "Rolling rollback is not active.");
   }
   if (state.rollback.completedNodes.includes(node)) return state;
+  const expected = (["app-01", "app-02", "app-03"] as const)[state.rollback.completedNodes.length];
+  if (node !== expected) throw new IncidentGuardError("ROLLBACK_ORDER_VIOLATION", `Expected ${expected} before ${node}.`);
 
   return {
     ...state,
     rollback: { ...state.rollback, completedNodes: [...state.rollback.completedNodes, node] },
+    rollbackProgress: state.rollbackProgress.map((item) => item.node === node ? { ...item, rollback: "completed", healthCheck: "passed" } : item),
     revision: state.revision + 1,
     events: [...state.events, event(state, "rollback_node_completed", node, at)],
   };
@@ -272,18 +374,22 @@ export function verifyRecovery(
     throw new IncidentGuardError("ROLLBACK_NOT_ACTIVE", "Recovery cannot be verified before rollback.");
   }
 
-  const passed =
-    metrics.http502Rate <= state.thresholds.http502Rate &&
-    metrics.p95LatencyMs <= state.thresholds.p95LatencyMs &&
-    metrics.dbConnections <= state.thresholds.dbConnections &&
-    metrics.replicationLagSeconds <= state.thresholds.replicationLagSeconds;
+  const recoveryChecks: RecoveryCheck[] = (Object.keys(state.thresholds) as Array<keyof RecoveryMetrics>).map((metric) => ({
+    id: `recovery-${metric}`,
+    metric,
+    observed: metrics[metric],
+    threshold: state.thresholds[metric],
+    operator: "lte",
+    passed: metrics[metric] <= state.thresholds[metric],
+  }));
+  const passed = recoveryChecks.every((check) => check.passed) && state.rollbackProgress.every((node) => node.healthCheck === "passed");
 
   if (!passed) {
     throw new IncidentGuardError("RECOVERY_THRESHOLDS_NOT_MET", "Recovery thresholds have not been met.");
   }
 
-  const next = withTransition(state, "RECOVERY_VERIFIED", "recovery_verified", "All recovery thresholds passed", at);
-  return { ...next, metrics: { ...metrics } };
+  const next = withTransition(state, "RECOVERY_VERIFIED", "recovery_verified", "All recovery thresholds and node health checks passed", at);
+  return { ...next, metrics: { ...metrics }, recoveryChecks };
 }
 
 export function closeIncident(

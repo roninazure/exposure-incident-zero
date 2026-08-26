@@ -22,6 +22,9 @@ test("requires the exact governed incident sequence", () => {
   state = model.requestAuthorization(state, "t5");
   state = model.authorizeRollback(state, "t6");
   state = model.executeRollingRollback(state, "t7");
+  state = model.recordRollbackNode(state, "app-01", "t7a");
+  state = model.recordRollbackNode(state, "app-02", "t7b");
+  state = model.recordRollbackNode(state, "app-03", "t7c");
   state = model.verifyRecovery(state, {
     http502Rate: 0.1,
     p95LatencyMs: 240,
@@ -31,7 +34,7 @@ test("requires the exact governed incident sequence", () => {
   state = model.closeIncident(state, "t9");
 
   assert.equal(state.state, "INCIDENT_CLOSED");
-  assert.equal(state.events.length, 10);
+  assert.equal(state.events.length, 13);
 });
 
 test("rejects PostgreSQL restart after human constraint registration", () => {

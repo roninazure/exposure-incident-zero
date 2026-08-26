@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, ArrowRight, Check, ChevronRight, CircleDot, Clock3, Cloud, Database, GitBranch, GitCommitHorizontal, KeyRound, Layers3, LockKeyhole, Network, Radar, RotateCcw, Search, Server, ShieldCheck, Sparkles, TerminalSquare, TriangleAlert, UserRound, X, Zap } from "lucide-react";
 import { createIncidentController, type IncidentController } from "./incident-controller";
 import type { IncidentStateName } from "./incident-state";
+import { createIncidentToolHandlers, INCIDENT_TOOL_DESCRIPTIONS } from "./webmcp-tools";
 
 type Phase = "investigate" | "decision" | "executing" | "verified";
 const nodes = [
@@ -20,6 +21,9 @@ export default function Home() {
   const controllerRef = useRef<IncidentController | null>(null);
   if (!controllerRef.current) controllerRef.current = createIncidentController();
   const controller = controllerRef.current;
+  const toolsRef = useRef<ReturnType<typeof createIncidentToolHandlers> | null>(null);
+  if (!toolsRef.current) toolsRef.current = createIncidentToolHandlers(controller);
+  const tools = toolsRef.current;
   const [incident, setIncident] = useState(controller.getState());
   const actionsRef = useRef<Record<string, () => Promise<unknown>>>({});
   useEffect(() => controller.subscribe(setIncident), [controller]);
@@ -29,10 +33,10 @@ export default function Home() {
   const activity = incident.events.at(-1)?.detail ?? "Awaiting investigation";
   const toolCount = incident.events.length;
   const metrics = useMemo(() => incident.state === "RECOVERY_VERIFIED" || incident.state === "INCIDENT_CLOSED" ? { errors: "0.1%", latency: "240ms", db: "126", cpu: "34%", lag: "1.2s" } : { errors: "18.7%", latency: "8.4s", db: "947", cpu: "93%", lag: "42s" }, [incident.state]);
-  const investigate = async () => { controller.investigateIncident(); controller.registerConstraint("restart_postgresql"); controller.proposeRemediation(); controller.requestAuthorization(); return { status: "awaiting_authorization", rootCause: incident.rootCause, confidence: 0.94 }; };
-  const authorize = async () => { controller.authorizeRollback(); controller.executeRollingRollback(); window.setTimeout(() => { controller.verifyRecovery(); controller.closeIncident(); }, 1400); return { status: "authorized", action: "rolling-rollback", target: "v2.8.13" }; };
-  useEffect(() => { actionsRef.current = { investigate_incident: investigate, register_constraint: async () => ({ state: controller.registerConstraint("restart_postgresql").state, constraint: "database restart prohibited" }), propose_remediation: async () => ({ state: controller.proposeRemediation().state, action: "rolling-rollback", from: "v2.8.14", to: "v2.8.13", expectedRecovery: 0.94 }), request_authorization: async () => ({ state: controller.requestAuthorization().state, status: "awaiting_human_authorization" }), execute_rolling_rollback: async () => ({ state: controller.executeRollingRollback().state, status: "rolling_back" }), verify_recovery: async () => ({ state: controller.verifyRecovery().state, status: "proven", metrics: controller.getState().metrics }) }; }, [controller, incident.rootCause]);
-  useEffect(() => { const modelContext = (document as Document & { modelContext?: { registerTool?: (tool: unknown) => void } }).modelContext; if (!modelContext?.registerTool) return; const descriptions: Record<string, string> = { investigate_incident: "Correlate logs, metrics, and recent changes to isolate root cause.", register_constraint: "Register the human PostgreSQL restart prohibition.", propose_remediation: "Propose the governed checkout rollback.", request_authorization: "Request explicit human approval for the proposed action.", execute_rolling_rollback: "Execute the authorized rolling rollback.", verify_recovery: "Measure recovery against deterministic thresholds." }; Object.entries(descriptions).forEach(([name, description]) => modelContext.registerTool?.({ name, description, inputSchema: { type: "object", properties: {} }, execute: () => actionsRef.current[name]?.() })); }, []);
+  const investigate = async () => { let result = tools.investigate_incident(); result = tools.register_constraint(); result = tools.propose_remediation(); result = tools.request_authorization(); return { ...result, evidence: controller.getState().evidence, hypotheses: controller.getState().hypotheses, remediationOptions: controller.getState().remediationOptions }; };
+  const authorize = async () => { controller.authorizeRollback(); const result = tools.execute_rolling_rollback(); window.setTimeout(() => { tools.verify_recovery(); controller.closeIncident(); }, 1400); return { ...result, status: "authorized" }; };
+  useEffect(() => { actionsRef.current = Object.fromEntries(Object.entries(tools).map(([name, execute]) => [name, async () => execute()])); }, [tools]);
+  useEffect(() => { const modelContext = (document as Document & { modelContext?: { registerTool?: (tool: unknown) => void } }).modelContext; if (!modelContext?.registerTool) return; Object.entries(INCIDENT_TOOL_DESCRIPTIONS).forEach(([name, description]) => modelContext.registerTool?.({ name, description, inputSchema: { type: "object", properties: {} }, execute: () => actionsRef.current[name]?.() })); }, []);
   const phaseLabel = phase === "investigate" ? "Investigation" : phase === "decision" ? "Decision required" : phase === "executing" ? "Remediation in progress" : "Recovery verified";
   return <main className="exposure-shell">
     <header className="topbar"><div className="brand-lockup"><div className="brand-mark"><Radar size={18} /></div><div><div className="brand-name">EXPOSURE</div><div className="brand-sub">Operational intelligence</div></div></div><div className="topbar-center"><span className="live-indicator" /> LIVE SIMULATION <span className="topbar-divider" /> INCIDENT ZERO</div><div className="topbar-right"><span className="environment"><Cloud size={14} /> enterprise-linux-9</span><button className="icon-button" aria-label="Reset incident" onClick={() => controller.reset()}><RotateCcw size={16} /></button><div className="avatar"><UserRound size={15} /></div></div></header>

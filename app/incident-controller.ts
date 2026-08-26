@@ -8,6 +8,8 @@ import {
   requestAuthorization,
   transitionIncident,
   verifyRecovery,
+  establishInvestigationRecords,
+  recordRollbackNode,
   type ActionName,
   type IncidentState,
   type RecoveryMetrics,
@@ -43,6 +45,7 @@ export function createIncidentController(initialState = createInitialIncidentSta
     },
     investigateIncident: (at?: string) => {
       let next = transitionIncident(state, "INVESTIGATED", at);
+      next = establishInvestigationRecords(next, at);
       next = transitionIncident(next, "ROOT_CAUSE_SUPPORTED", at);
       return publish(next);
     },
@@ -51,7 +54,11 @@ export function createIncidentController(initialState = createInitialIncidentSta
     proposeRemediation: (at?: string) => publish(proposeRollback(state, at)),
     requestAuthorization: (at?: string) => publish(requestAuthorization(state, at)),
     authorizeRollback: (at?: string) => publish(authorizeRollback(state, at)),
-    executeRollingRollback: (at?: string) => publish(executeRollingRollback(state, at)),
+    executeRollingRollback: (at?: string) => {
+      let next = executeRollingRollback(state, at);
+      for (const node of ["app-01", "app-02", "app-03"] as const) next = recordRollbackNode(next, node, at);
+      return publish(next);
+    },
     verifyRecovery: (metrics: RecoveryMetrics = RECOVERY_METRICS, at?: string) =>
       publish(verifyRecovery(state, metrics, at)),
     closeIncident: (at?: string) => publish(closeIncident(state, at)),
