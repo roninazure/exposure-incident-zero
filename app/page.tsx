@@ -19,7 +19,7 @@ export default function Home() {
   const [controller] = useState<IncidentController>(() => createIncidentController());
   const tools = useMemo(() => createIncidentToolHandlers(controller), [controller]);
   const [incident, setIncident] = useState(controller.getState());
-  const [theme, setTheme] = useState<Theme>(() => typeof window === "undefined" ? "dark" : resolveInitialTheme(window.localStorage.getItem("exposure-theme"), window.matchMedia("(prefers-color-scheme: light)").matches));
+  const [theme, setTheme] = useState<Theme>(() => typeof window === "undefined" ? "light" : resolveInitialTheme(window.localStorage.getItem("exposure-theme"), true));
   const actionsRef = useRef<Record<string, () => Promise<unknown>>>({});
   useEffect(() => controller.subscribe(setIncident), [controller]);
   const stateToPhase = (state: IncidentStateName): Phase => state === "ACTIVE_INCIDENT" ? "investigate" : state === "ROLLING_BACK" ? "executing" : state === "RECOVERY_VERIFIED" || state === "INCIDENT_CLOSED" ? "verified" : "decision";
