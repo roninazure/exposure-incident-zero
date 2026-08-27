@@ -163,3 +163,28 @@ html[data-theme="light"] .symptom-callout {
 @media (prefers-reduced-motion: reduce) {
   .service-glyph, .object-rail, .service-detail { transition: none !important; }
 }
+
+/* Higher-specificity guard: this file is imported before the legacy catalog CSS. */
+html[data-theme] .workspace-grid {
+  grid-template-columns: 248px minmax(0, 1fr) 340px !important;
+  align-items: start;
+}
+
+html[data-theme] .object-rail { grid-column: auto !important; min-height: 620px; }
+html[data-theme] .main-column { grid-column: auto !important; }
+html[data-theme] .side-column { grid-column: auto !important; display: flex; }
+
+@media (max-width: 1250px) {
+  html[data-theme] .workspace-grid { grid-template-columns: 220px minmax(0, 1fr) !important; }
+  html[data-theme] .side-column { grid-column: 2 !important; }
+}
+
+@media (max-width: 900px) {
+  html[data-theme] .workspace-grid { grid-template-columns: 1fr !important; }
+  html[data-theme] .object-rail,
+  html[data-theme] .main-column,
+  html[data-theme] .side-column { grid-column: auto !important; }
+}
+
+html[data-theme="light"] body,
+html[data-theme="light"] .exposure-shell { background: var(--canvas) !important; color: var(--text-primary) !important; }
