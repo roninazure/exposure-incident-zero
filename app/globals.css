@@ -53,10 +53,10 @@ body { background: var(--canvas); color: var(--text-primary); }
 .exposure-shell { position: relative; isolation: isolate; overflow: hidden; background: var(--canvas); color: var(--text-primary); }
 .topbar, .incident-strip, .timeline-section, .footer-bar { border-color: var(--border-subtle); }
 .topbar { position: relative; z-index: 2; background: color-mix(in srgb, var(--canvas) 88%, transparent); }
-.horizon-band { position: absolute; z-index: 0; top: 64px; left: 0; right: 0; height: 220px; pointer-events: none; background: linear-gradient(180deg, var(--horizon-start), var(--horizon-mid) 48%, transparent); transition: opacity 1.4s ease, background 1.4s ease; }
+.horizon-band { position: absolute; z-index: 0; top: 64px; left: 0; right: 0; height: 16px; pointer-events: none; background: linear-gradient(90deg, var(--horizon-start), var(--horizon-mid) 52%, var(--horizon-end)); transition: opacity 1.4s ease, background 1.4s ease; box-shadow: 0 5px 18px color-mix(in srgb, var(--horizon-light) 18%, transparent); }
 .exposure-shell > :not(.horizon-band) { position: relative; z-index: 1; }
-.horizon-band::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--horizon-light), transparent); opacity: .45; }
-.horizon-light { position: absolute; top: 112px; width: 16px; height: 16px; border-radius: 50%; background: var(--horizon-light); box-shadow: 0 0 24px color-mix(in srgb, var(--horizon-light) 65%, transparent); transition: left 1.4s cubic-bezier(.22,.61,.36,1); }
+.horizon-band::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--horizon-light), transparent); opacity: .8; }
+.horizon-light { position: absolute; top: 3px; width: 10px; height: 10px; border-radius: 50%; background: var(--horizon-light); box-shadow: 0 0 18px color-mix(in srgb, var(--horizon-light) 70%, transparent); transform: translateX(-50%); transition: left 1.4s cubic-bezier(.22,.61,.36,1); }
 .light-left .horizon-light { left: 18%; }
 .light-center .horizon-light { left: 50%; }
 .light-right .horizon-light { left: 82%; }
@@ -71,7 +71,8 @@ body { background: var(--canvas); color: var(--text-primary); }
 .node-recovered { border-color: var(--recovery); background: color-mix(in srgb, var(--recovery) 18%, var(--surface-secondary)); box-shadow: 0 0 18px color-mix(in srgb, var(--recovery) 24%, transparent); }
 .node-recovered .node-led, .node-health .node-led { background: var(--remediation); box-shadow: 0 0 8px color-mix(in srgb, var(--remediation) 55%, transparent); }
 .node-health { border-color: var(--remediation); background: color-mix(in srgb, var(--remediation) 15%, var(--surface-secondary)); }
-.topology-canvas.propagation-1 .l1, .topology-canvas.propagation-2 .l1, .topology-canvas.propagation-2 .l3, .topology-canvas.propagation-3 .line { background: var(--remediation); box-shadow: 0 0 7px color-mix(in srgb, var(--remediation) 70%, transparent); opacity: .9; }
+.topology-canvas .topology-lines { display: none; }
+.topology-canvas .topology-edge.is-remediated { stroke: var(--remediation); opacity: .95; }
 .primary-button { background: var(--command); border-color: var(--command-hover); box-shadow: 0 7px 20px color-mix(in srgb, var(--command) 24%, transparent); }
 .primary-button:hover { background: var(--command-hover); }
 .agent-avatar, .quote-mark, .legend-note svg { color: var(--command); }
@@ -83,4 +84,131 @@ body { background: var(--canvas); color: var(--text-primary); }
 :root[data-theme="light"] .topology-canvas { background: linear-gradient(180deg, #eee5d8, #f7f0e4); }
 :root[data-theme="light"] .topology-lines .line { background: #b8aa98; }
 :root[data-theme="light"] .agent-panel { background: var(--surface-secondary); }
+html[data-theme="dark"] .fleet-node { color: var(--text-primary); background: var(--surface-secondary); border-color: var(--border-primary); }
+html[data-theme="dark"] .fleet-node.node-critical { background: color-mix(in srgb, var(--incident) 13%, var(--surface-secondary)); border-color: var(--incident); }
+html[data-theme="dark"] .fleet-node.node-degraded { background: color-mix(in srgb, var(--pressure) 12%, var(--surface-secondary)); border-color: var(--pressure); }
+html[data-theme="dark"] .fleet-node.node-health { background: color-mix(in srgb, var(--remediation) 13%, var(--surface-secondary)); border-color: var(--remediation); }
+html[data-theme="dark"] .fleet-node.node-recovered { background: color-mix(in srgb, var(--recovery) 15%, var(--surface-secondary)); border-color: var(--recovery); }
+html[data-theme="light"] .fleet-node { color: var(--text-primary); background: var(--surface-elevated); border-color: var(--border-primary); }
+/* Fleet-node theme ownership: these finish after legacy card/state rules. */
+:root[data-theme="light"] .topology-canvas .fleet-node {
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+  border-color: var(--border-primary);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--canvas) 12%, transparent);
+}
+:root[data-theme="light"] .topology-canvas .fleet-node.node-critical {
+  background: color-mix(in srgb, var(--incident) 8%, var(--surface-elevated));
+  border-color: var(--incident);
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--incident) 14%, transparent);
+}
+:root[data-theme="light"] .topology-canvas .fleet-node.node-degraded {
+  background: color-mix(in srgb, var(--pressure) 8%, var(--surface-elevated));
+  border-color: var(--pressure);
+}
+:root[data-theme="light"] .topology-canvas .fleet-node.node-health {
+  background: color-mix(in srgb, var(--remediation) 13%, var(--surface-elevated));
+  border-color: var(--remediation);
+}
+:root[data-theme="light"] .topology-canvas .fleet-node.node-recovered {
+  background: color-mix(in srgb, var(--recovery) 15%, var(--surface-elevated));
+  border-color: var(--recovery);
+}
+:root[data-theme="light"] .topology-canvas .fleet-node .node-role { color: var(--text-secondary); }
+:root[data-theme="light"] .topology-canvas .fleet-node .node-meter { background: var(--border-subtle); }
+:root[data-theme="dark"] .topology-canvas .fleet-node {
+  color: var(--text-primary);
+  background: var(--surface-secondary);
+  border-color: var(--border-primary);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--canvas) 22%, transparent);
+}
+:root[data-theme="dark"] .topology-canvas .fleet-node.node-critical {
+  background: color-mix(in srgb, var(--incident) 13%, var(--surface-secondary));
+  border-color: var(--incident);
+}
+:root[data-theme="dark"] .topology-canvas .fleet-node.node-degraded {
+  background: color-mix(in srgb, var(--pressure) 12%, var(--surface-secondary));
+  border-color: var(--pressure);
+}
+:root[data-theme="dark"] .topology-canvas .fleet-node.node-health {
+  background: color-mix(in srgb, var(--remediation) 13%, var(--surface-secondary));
+  border-color: var(--remediation);
+}
+:root[data-theme="dark"] .topology-canvas .fleet-node.node-recovered {
+  background: color-mix(in srgb, var(--recovery) 15%, var(--surface-secondary));
+  border-color: var(--recovery);
+}
+:root[data-theme="dark"] .topology-canvas .fleet-node .node-role { color: var(--text-secondary); }
+:root[data-theme="dark"] .topology-canvas .fleet-node .node-meter { background: var(--border-subtle); }
+/* Theme switches must not interpolate the legacy dark node surface into daylight. */
+:root[data-theme] .topology-canvas .fleet-node { transition: transform .4s ease, box-shadow .25s ease; }
+
+/* Final semantic surface ownership.  This layer neutralizes the starter's
+   unscoped dark literals above, after every legacy selector has run. */
+:root[data-theme] body,
+:root[data-theme] .exposure-shell {
+  background: var(--canvas) !important;
+  color: var(--text-primary);
+}
+:root[data-theme] .topbar {
+  background: color-mix(in srgb, var(--surface-primary) 94%, transparent) !important;
+  border-color: var(--border-subtle);
+}
+:root[data-theme] .panel {
+  background: var(--surface-primary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary);
+}
+:root[data-theme] .topology-canvas {
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 41px, color-mix(in srgb, var(--border-primary) 26%, transparent) 42px),
+    repeating-linear-gradient(90deg, transparent, transparent 53px, color-mix(in srgb, var(--border-primary) 20%, transparent) 54px),
+    var(--surface-secondary) !important;
+  border-color: var(--border-subtle);
+}
+:root[data-theme] .fleet-node {
+  background: var(--surface-elevated) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary);
+}
+:root[data-theme] .fleet-node.node-critical {
+  background: color-mix(in srgb, var(--incident) 10%, var(--surface-elevated)) !important;
+  border-color: var(--incident) !important;
+}
+:root[data-theme] .fleet-node.node-degraded {
+  background: color-mix(in srgb, var(--pressure) 10%, var(--surface-elevated)) !important;
+  border-color: var(--pressure) !important;
+}
+:root[data-theme] .fleet-node.node-health {
+  background: color-mix(in srgb, var(--remediation) 13%, var(--surface-elevated)) !important;
+  border-color: var(--remediation) !important;
+}
+:root[data-theme] .fleet-node.node-recovered {
+  background: color-mix(in srgb, var(--recovery) 15%, var(--surface-elevated)) !important;
+  border-color: var(--recovery) !important;
+}
+:root[data-theme] .action-panel {
+  background: color-mix(in srgb, var(--authorization) 8%, var(--surface-primary)) !important;
+  border-color: color-mix(in srgb, var(--authorization) 48%, var(--border-primary)) !important;
+}
+:root[data-theme] .constraint-card {
+  background: color-mix(in srgb, var(--authorization) 10%, var(--surface-secondary)) !important;
+  border-color: color-mix(in srgb, var(--authorization) 52%, var(--border-primary)) !important;
+}
+:root[data-theme] .verified-state {
+  background: color-mix(in srgb, var(--recovery) 14%, var(--surface-secondary)) !important;
+  border-color: var(--recovery) !important;
+}
+:root[data-theme] .root-callout,
+:root[data-theme] .symptom-callout,
+:root[data-theme] .status-pill,
+:root[data-theme] .icon-button,
+:root[data-theme] .ghost-button {
+  background: var(--surface-secondary);
+  border-color: var(--border-primary);
+  color: var(--text-secondary);
+}
+:root[data-theme] .status-critical { background: color-mix(in srgb, var(--incident) 12%, var(--surface-secondary)); color: var(--incident); }
+:root[data-theme] .status-warn { background: color-mix(in srgb, var(--authorization) 12%, var(--surface-secondary)); color: var(--authorization); }
+:root[data-theme] .status-success { background: color-mix(in srgb, var(--recovery) 12%, var(--surface-secondary)); color: var(--recovery); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .001ms !important; } }

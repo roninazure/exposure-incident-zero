@@ -154,26 +154,6 @@ html[data-theme="light"] .topology-canvas {
   background: var(--surface-secondary);
 }
 
-html[data-theme="light"] .fleet-node {
-  color: var(--text-primary);
-  background: var(--surface-elevated);
-  border-color: var(--border-primary);
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--canvas) 12%, transparent);
-}
-
-html[data-theme="light"] .fleet-node.node-critical {
-  background: color-mix(in srgb, var(--incident) 8%, var(--surface-elevated));
-  border-color: var(--incident);
-  box-shadow: 0 5px 16px color-mix(in srgb, var(--incident) 14%, transparent);
-}
-
-html[data-theme="light"] .fleet-node.node-degraded {
-  background: color-mix(in srgb, var(--pressure) 8%, var(--surface-elevated));
-  border-color: var(--pressure);
-}
-
-html[data-theme="light"] .node-role { color: var(--text-secondary); }
-html[data-theme="light"] .node-meter { background: var(--border-subtle); }
 html[data-theme="light"] .topology-lines .line { background: var(--text-secondary); opacity: .42; }
 
 @media (max-width: 1250px) {
@@ -237,9 +217,65 @@ html[data-theme="light"] .exposure-shell { background: var(--canvas) !important;
 .exposure-shell { padding-left: 42px; }
 .topbar { padding-left: 20px; }
 html[data-theme] .workspace-grid { margin-left: 0; }
+/* Keep the global rail out of normal flow. The shell's content-layer rule is
+   intentionally more specific than the base nav selector. */
+html[data-theme] .global-nav { position: fixed; }
+
+/* Approved console geometry: compact, dense, topology-first desktop view. */
+@media (min-width: 1251px) {
+  html[data-theme] .incident-strip { padding-top: 16px; padding-bottom: 13px; }
+  html[data-theme] .workspace-grid { padding-top: 16px; gap: 12px; }
+  html[data-theme] .main-column, html[data-theme] .side-column { gap: 12px; }
+  html[data-theme] .object-rail { min-height: 0; padding: 14px 12px; }
+  html[data-theme] .topology-canvas { height: 390px; margin: 0 12px; }
+  html[data-theme] .panel { border-radius: 4px; box-shadow: 0 8px 20px color-mix(in srgb, var(--canvas) 20%, transparent); }
+  html[data-theme] .panel-heading { padding: 14px 16px 10px; }
+  html[data-theme] .lower-grid { gap: 12px; }
+  html[data-theme] .timeline-section { margin: 0; padding: 12px 16px 0; border-top: 1px solid var(--border-subtle); }
+  html[data-theme] .timeline-track { margin-top: 11px; }
+  html[data-theme] .timeline-event { padding-top: 10px; }
+  html[data-theme] .service-detail, html[data-theme] .decision-panel, html[data-theme] .action-panel, html[data-theme] .agent-panel { padding: 14px 16px; }
+}
+
+.topology-edges { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 0; }
+.topology-edges .topology-edge { stroke: #77858d; stroke-width: 1.4; vector-effect: non-scaling-stroke; opacity: .86; transition: stroke .35s ease, opacity .35s ease; }
+html[data-theme="light"] .topology-edges .topology-edge { stroke: #8b8177; opacity: .82; }
+.fleet-node { z-index: 1; }
+
+@media (min-width: 1251px) {
+  html[data-theme] .side-column {
+    /* 64px header + 103px incident strip + 16px workspace inset. */
+    height: calc(100vh - 183px);
+    min-height: 0;
+    display: grid;
+    grid-template-rows: 198px 240px minmax(0, 1fr);
+    gap: 8px;
+  }
+  html[data-theme] .service-detail { min-height: 0; padding: 10px 14px; }
+  html[data-theme] .service-name { margin: 12px 0; }
+  html[data-theme] .service-detail dl { margin: 8px 0; padding: 8px 0; row-gap: 5px; }
+  html[data-theme] .service-note { margin-top: 8px; padding: 7px 10px; gap: 4px; }
+  html[data-theme] .decision-panel { min-height: 0; padding: 10px 14px; }
+  html[data-theme] .decision-head { margin: 5px 0 9px; }
+  html[data-theme] .decision-head h2 { font-size: 14px; }
+  html[data-theme] .hypothesis { padding: 5px 0; }
+  html[data-theme] .hypothesis p { margin-top: 2px; line-height: 1.18; }
+  html[data-theme] .constraint-card { margin-top: 6px; padding: 7px 8px; }
+  html[data-theme] .constraint-card p { margin: 4px 0; }
+  html[data-theme] .action-panel { min-height: 0; padding: 10px 14px; }
+  html[data-theme] .action-title { margin: 6px 0 7px; }
+  html[data-theme] .action-meta { padding-bottom: 9px; }
+  html[data-theme] .primary-button { margin-top: 9px; padding: 9px 10px; }
+  html[data-theme] .action-foot { margin-top: 9px; padding-top: 8px; }
+  html[data-theme] .agent-panel { display: none; }
+}
+
+.recovery-status { display: flex; align-items: center; gap: 7px; margin-top: 7px; padding: 6px 8px; border-left: 2px solid var(--recovery); background: color-mix(in srgb, var(--recovery) 9%, transparent); color: var(--text-secondary); font-size: 9px; line-height: 1.25; }
+.recovery-status b { color: var(--text-primary); }
+.recovery-status.is-verified { color: var(--recovery); }
 
 @media (max-width: 900px) {
-  .global-nav { position: static; width: 100%; height: 42px; flex-direction: row; padding: 0 12px; gap: 12px; border-right: 0; border-bottom: 1px solid var(--border-primary); }
+  html[data-theme] .global-nav { position: static; width: 100%; height: 42px; flex-direction: row; padding: 0 12px; gap: 12px; border-right: 0; border-bottom: 1px solid var(--border-primary); }
   .global-nav-line { width: 1px; height: 18px; border-top: 0; border-left: 1px solid var(--border-primary); margin: 0 3px; }
   .exposure-shell { padding-left: 0; }
   .topbar { padding-left: 16px; }
