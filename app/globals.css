@@ -53,7 +53,8 @@ body { background: var(--canvas); color: var(--text-primary); }
 .exposure-shell { position: relative; isolation: isolate; overflow: hidden; background: var(--canvas); color: var(--text-primary); }
 .topbar, .incident-strip, .timeline-section, .footer-bar { border-color: var(--border-subtle); }
 .topbar { position: relative; z-index: 2; background: color-mix(in srgb, var(--canvas) 88%, transparent); }
-.horizon-band { position: absolute; z-index: -1; top: 64px; left: 0; right: 0; height: 220px; pointer-events: none; background: linear-gradient(180deg, var(--horizon-start), var(--horizon-mid) 48%, transparent); transition: opacity 1.4s ease, background 1.4s ease; }
+.horizon-band { position: absolute; z-index: 0; top: 64px; left: 0; right: 0; height: 220px; pointer-events: none; background: linear-gradient(180deg, var(--horizon-start), var(--horizon-mid) 48%, transparent); transition: opacity 1.4s ease, background 1.4s ease; }
+.exposure-shell > :not(.horizon-band) { position: relative; z-index: 1; }
 .horizon-band::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--horizon-light), transparent); opacity: .45; }
 .horizon-light { position: absolute; top: 112px; width: 16px; height: 16px; border-radius: 50%; background: var(--horizon-light); box-shadow: 0 0 24px color-mix(in srgb, var(--horizon-light) 65%, transparent); transition: left 1.4s cubic-bezier(.22,.61,.36,1); }
 .light-left .horizon-light { left: 18%; }
