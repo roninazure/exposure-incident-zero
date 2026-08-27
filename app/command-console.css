@@ -149,6 +149,33 @@ html[data-theme="light"] .symptom-callout {
   border-color: var(--border-primary);
 }
 
+html[data-theme="light"] .topology-canvas {
+  height: 398px;
+  background: var(--surface-secondary);
+}
+
+html[data-theme="light"] .fleet-node {
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+  border-color: var(--border-primary);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--canvas) 12%, transparent);
+}
+
+html[data-theme="light"] .fleet-node.node-critical {
+  background: color-mix(in srgb, var(--incident) 8%, var(--surface-elevated));
+  border-color: var(--incident);
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--incident) 14%, transparent);
+}
+
+html[data-theme="light"] .fleet-node.node-degraded {
+  background: color-mix(in srgb, var(--pressure) 8%, var(--surface-elevated));
+  border-color: var(--pressure);
+}
+
+html[data-theme="light"] .node-role { color: var(--text-secondary); }
+html[data-theme="light"] .node-meter { background: var(--border-subtle); }
+html[data-theme="light"] .topology-lines .line { background: var(--text-secondary); opacity: .42; }
+
 @media (max-width: 1250px) {
   .workspace-grid { grid-template-columns: 220px minmax(0, 1fr); }
   .side-column { grid-column: 2; }

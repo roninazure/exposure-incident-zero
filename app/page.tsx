@@ -9,7 +9,17 @@ import { getHorizonVisual } from "./horizon";
 import { resolveInitialTheme, toggleTheme, type Theme } from "./theme";
 
 type Phase = "investigate" | "decision" | "executing" | "verified";
-const nodes = [["edge-lb01", "Nginx edge", "healthy"], ["web-01", "Web tier", "healthy"], ["web-02", "Web tier", "healthy"], ["app-01", "Checkout API", "critical"], ["app-02", "Checkout API", "critical"], ["app-03", "Checkout API", "critical"], ["cache-01", "Redis cache", "healthy"], ["db-primary", "PostgreSQL primary", "degraded"], ["db-replica", "PostgreSQL replica", "degraded"]] as const;
+const nodes = [
+  { id: "edge-lb01", role: "Nginx edge", status: "healthy", x: 50, y: 14 },
+  { id: "web-01", role: "Web tier", status: "healthy", x: 30, y: 33 },
+  { id: "web-02", role: "Web tier", status: "healthy", x: 70, y: 33 },
+  { id: "app-01", role: "Checkout API", status: "critical", x: 18, y: 57 },
+  { id: "app-02", role: "Checkout API", status: "critical", x: 50, y: 57 },
+  { id: "app-03", role: "Checkout API", status: "critical", x: 82, y: 57 },
+  { id: "cache-01", role: "Redis cache", status: "healthy", x: 28, y: 82 },
+  { id: "db-primary", role: "PostgreSQL primary", status: "degraded", x: 58, y: 82 },
+  { id: "db-replica", role: "PostgreSQL replica", status: "degraded", x: 84, y: 84 },
+] as const;
 const timeline = [["09:41:07", "Incident opened", "Customer checkout errors exceed threshold", "critical"], ["09:41:22", "Fleet inspected", "9 nodes returned · 3 application nodes degraded", "info"], ["09:41:39", "Evidence connected", "Deployment v2.8.14 precedes connection surge", "info"], ["09:41:56", "Hypothesis challenged", "Database is downstream, not causal", "success"]];
 
 function StatusPill({ children, tone = "neutral" }: { children: React.ReactNode; tone?: string }) { return <span className={`status-pill status-${tone}`}><span className="status-dot" />{children}</span>; }
