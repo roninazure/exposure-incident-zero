@@ -1,0 +1,165 @@
+/* Daylight command-console convergence layer. Domain state remains controller-owned. */
+html[data-theme="light"] {
+  --canvas: #eee9df;
+  --surface-primary: #f8f5ee;
+  --surface-secondary: #f1ede4;
+  --surface-elevated: #fffdf8;
+  --text-primary: #302b27;
+  --text-secondary: #655d55;
+  --text-muted: #877d72;
+  --border-primary: #cfc6b8;
+  --border-subtle: #e3ddd2;
+  --command: #b76522;
+  --command-hover: #914b18;
+  --incident: #b64e3e;
+  --pressure: #c4772d;
+  --authorization: #a86a20;
+  --remediation: #bd7b28;
+  --recovery: #66866a;
+}
+
+html[data-theme="light"] body {
+  background: var(--canvas);
+  color: var(--text-primary);
+}
+
+html[data-theme="light"] .exposure-shell {
+  background: radial-gradient(circle at 58% 4%, #d8b88c55 0, transparent 24%), var(--canvas);
+}
+
+html[data-theme="light"] .topbar,
+html[data-theme="light"] .panel {
+  background: var(--surface-primary);
+  border-color: var(--border-primary);
+  box-shadow: 0 10px 28px #6b58421a;
+}
+
+.workspace-grid {
+  grid-template-columns: 248px minmax(0, 1fr) 340px;
+  align-items: start;
+}
+
+.object-rail {
+  min-height: 620px;
+  padding: 18px 14px;
+}
+
+.object-search {
+  margin: 15px 0 12px;
+  border: 1px solid var(--border-primary);
+  padding: 9px 10px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.object-tabs {
+  display: flex;
+  gap: 9px;
+  padding-bottom: 13px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  font: 9px ui-monospace, monospace;
+}
+
+.object-tabs .active { color: var(--incident); }
+
+.object-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 3px 5px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.object-group b {
+  color: var(--text-muted);
+  font: 700 9px ui-monospace, monospace;
+  letter-spacing: .16em;
+}
+
+.object-group span {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.object-group small {
+  display: block;
+  margin: 3px 0 0 14px;
+  color: var(--text-muted);
+  font: 9px ui-monospace, monospace;
+}
+
+.critical-text { color: var(--incident) !important; }
+
+.service-detail {
+  padding: 18px 20px;
+}
+
+.service-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 18px;
+}
+
+.service-name h2 { margin: 0 0 5px; font-size: 17px; }
+.service-name span { font: 9px ui-monospace, monospace; }
+.service-glyph {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--incident);
+  color: var(--incident);
+  font-size: 18px !important;
+}
+
+.service-detail dl {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 9px 12px;
+  margin: 0;
+  padding: 13px 0;
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 10px;
+}
+
+.service-detail dt { color: var(--text-muted); }
+.service-detail dd { margin: 0; color: var(--text-secondary); }
+
+.service-note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 11px;
+  border-left: 2px solid var(--command);
+  background: var(--surface-secondary);
+  font-size: 10px;
+}
+
+.service-note b { color: var(--command); }
+.service-note span { color: var(--text-secondary); }
+.service-note small { color: var(--text-muted); }
+
+html[data-theme="light"] .root-callout,
+html[data-theme="light"] .symptom-callout {
+  background: var(--surface-secondary);
+  border-color: var(--border-primary);
+}
+
+@media (max-width: 1250px) {
+  .workspace-grid { grid-template-columns: 220px minmax(0, 1fr); }
+  .side-column { grid-column: 2; }
+}
+
+@media (max-width: 900px) {
+  .workspace-grid { grid-template-columns: 1fr; }
+  .object-rail, .main-column, .side-column { grid-column: auto; }
+  .object-rail { min-height: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-glyph, .object-rail, .service-detail { transition: none !important; }
+}
