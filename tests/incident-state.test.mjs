@@ -25,6 +25,8 @@ test("requires the exact governed incident sequence", () => {
   state = model.recordRollbackNode(state, "app-01", "t7a");
   state = model.recordRollbackNode(state, "app-02", "t7b");
   state = model.recordRollbackNode(state, "app-03", "t7c");
+  assert.throws(() => model.closeIncident(state, "t7c-seal"), (error) => error.code === "INVALID_TRANSITION");
+  state = model.beginRecoveryVerification(state, "t7d");
   state = model.verifyRecovery(state, {
     http502Rate: 0.1,
     p95LatencyMs: 240,
@@ -34,7 +36,7 @@ test("requires the exact governed incident sequence", () => {
   state = model.closeIncident(state, "t9");
 
   assert.equal(state.state, "INCIDENT_CLOSED");
-  assert.equal(state.events.length, 13);
+  assert.equal(state.events.length, 15);
 });
 
 test("rejects PostgreSQL restart after human constraint registration", () => {
@@ -80,6 +82,6 @@ test("rejects recovery until all deterministic thresholds pass", () => {
       dbConnections: 126,
       replicationLagSeconds: 1.2,
     }, "t8"),
-    (error) => error.code === "RECOVERY_THRESHOLDS_NOT_MET",
+    (error) => error.code === "ROLLBACK_INCOMPLETE",
   );
 });

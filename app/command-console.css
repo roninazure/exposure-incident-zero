@@ -1,22 +1,4 @@
-/* Daylight command-console convergence layer. Domain state remains controller-owned. */
-html[data-theme="light"] {
-  --canvas: #eee9df;
-  --surface-primary: #f8f5ee;
-  --surface-secondary: #f1ede4;
-  --surface-elevated: #fffdf8;
-  --text-primary: #302b27;
-  --text-secondary: #655d55;
-  --text-muted: #877d72;
-  --border-primary: #cfc6b8;
-  --border-subtle: #e3ddd2;
-  --command: #b76522;
-  --command-hover: #914b18;
-  --incident: #b64e3e;
-  --pressure: #c4772d;
-  --authorization: #a86a20;
-  --remediation: #bd7b28;
-  --recovery: #66866a;
-}
+/* Command-console convergence layer. Theme values are owned by globals.css. */
 
 html[data-theme="light"] body {
   background: var(--canvas);
@@ -24,14 +6,14 @@ html[data-theme="light"] body {
 }
 
 html[data-theme="light"] .exposure-shell {
-  background: radial-gradient(circle at 58% 4%, #d8b88c55 0, transparent 24%), var(--canvas);
+  background: radial-gradient(circle at 58% 4%, color-mix(in srgb, var(--axis-amber) 22%, transparent) 0, transparent 24%), var(--canvas);
 }
 
 html[data-theme="light"] .topbar,
 html[data-theme="light"] .panel {
   background: var(--surface-primary);
   border-color: var(--border-primary);
-  box-shadow: 0 10px 28px #6b58421a;
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--axis-ink-muted) 12%, transparent);
 }
 
 .workspace-grid {
@@ -223,7 +205,7 @@ html[data-theme] .global-nav { position: fixed; }
 
 /* Approved console geometry: compact, dense, topology-first desktop view. */
 @media (min-width: 1251px) {
-  html[data-theme] .incident-strip { padding-top: 16px; padding-bottom: 13px; }
+  html[data-theme] .incident-strip { padding-top: 29px; padding-bottom: 13px; }
   html[data-theme] .workspace-grid { padding-top: 16px; gap: 12px; }
   html[data-theme] .main-column, html[data-theme] .side-column { gap: 12px; }
   html[data-theme] .object-rail { min-height: 0; padding: 14px 12px; }
@@ -237,18 +219,26 @@ html[data-theme] .global-nav { position: fixed; }
   html[data-theme] .service-detail, html[data-theme] .decision-panel, html[data-theme] .action-panel, html[data-theme] .agent-panel { padding: 14px 16px; }
 }
 
-.topology-edges { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 0; }
-.topology-edges .topology-edge { stroke: #77858d; stroke-width: 1.4; vector-effect: non-scaling-stroke; opacity: .86; transition: stroke .35s ease, opacity .35s ease; }
-html[data-theme="light"] .topology-edges .topology-edge { stroke: #8b8177; opacity: .82; }
-.fleet-node { z-index: 1; }
+.topology-stage { display: block; width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
+.topology-edge-layer .topology-edge { fill: none; stroke: color-mix(in srgb, var(--axis-border) 68%, var(--axis-ink-muted)); stroke-width: 1.25; stroke-linecap: square; stroke-linejoin: round; vector-effect: non-scaling-stroke; opacity: .86; transition: stroke .35s ease, opacity .35s ease; }
+html[data-theme="light"] .topology-edge-layer .topology-edge { opacity: .82; }
+.topology-port { fill: var(--surface-elevated); stroke: color-mix(in srgb, var(--axis-border) 68%, var(--axis-ink-muted)); stroke-width: 1.25; vector-effect: non-scaling-stroke; }
+.topology-group-boundary { fill: color-mix(in srgb, var(--pressure) 4%, transparent); stroke: color-mix(in srgb, var(--pressure) 44%, var(--border-subtle)); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.topology-group-label { fill: var(--text-muted); font: 700 7px ui-monospace, monospace; letter-spacing: .14em; }
+.topology-node-frame { overflow: visible; }
+.topology-node-frame .fleet-node { z-index: 1; }
+.topology-node-frame .node-semantic-label { margin-left: auto; font: 700 7px ui-monospace, monospace; letter-spacing: .08em; }
+.topology-node-frame .node-root-cause .node-semantic-label { color: var(--incident); }
+.topology-node-frame .node-victim .node-semantic-label { color: var(--pressure); }
+.topology-node-frame .node-semantic-label + svg { margin-left: 0; }
 
 @media (min-width: 1251px) {
   html[data-theme] .side-column {
     /* 64px header + 103px incident strip + 16px workspace inset. */
-    height: calc(100vh - 183px);
+    height: auto;
     min-height: 0;
     display: grid;
-    grid-template-rows: 198px 240px minmax(0, 1fr);
+    grid-template-rows: repeat(3, max-content);
     gap: 8px;
   }
   html[data-theme] .service-detail { min-height: 0; padding: 10px 14px; }
@@ -268,6 +258,15 @@ html[data-theme="light"] .topology-edges .topology-edge { stroke: #8b8177; opaci
   html[data-theme] .primary-button { margin-top: 9px; padding: 9px 10px; }
   html[data-theme] .action-foot { margin-top: 9px; padding-top: 8px; }
   html[data-theme] .agent-panel { display: none; }
+  html[data-theme] .timeline-section { grid-column: 1 / -1; }
+
+  html[data-theme] .action-panel.authorization-pending {
+    min-height: 220px;
+    overflow: hidden;
+    position: relative;
+    z-index: 2;
+  }
+
 }
 
 .recovery-status { display: flex; align-items: center; gap: 7px; margin-top: 7px; padding: 6px 8px; border-left: 2px solid var(--recovery); background: color-mix(in srgb, var(--recovery) 9%, transparent); color: var(--text-secondary); font-size: 9px; line-height: 1.25; }

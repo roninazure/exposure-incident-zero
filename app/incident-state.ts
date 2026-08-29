@@ -7,6 +7,7 @@ export const INCIDENT_STATES = [
   "AWAITING_HUMAN_AUTHORIZATION",
   "AUTHORIZED",
   "ROLLING_BACK",
+  "RECOVERY_VERIFYING",
   "RECOVERY_VERIFIED",
   "INCIDENT_CLOSED",
 ] as const;
@@ -151,13 +152,14 @@ const ALLOWED_TRANSITIONS: Record<IncidentStateName, IncidentStateName[]> = {
   ROLLBACK_PROPOSED: ["AWAITING_HUMAN_AUTHORIZATION"],
   AWAITING_HUMAN_AUTHORIZATION: ["AUTHORIZED"],
   AUTHORIZED: ["ROLLING_BACK"],
-  ROLLING_BACK: ["RECOVERY_VERIFIED"],
+  ROLLING_BACK: ["RECOVERY_VERIFYING", "RECOVERY_VERIFIED"],
+  RECOVERY_VERIFYING: ["RECOVERY_VERIFIED"],
   RECOVERY_VERIFIED: ["INCIDENT_CLOSED"],
   INCIDENT_CLOSED: [],
 };
 
 function event(state: IncidentState, type: string, detail: string, at: string): IncidentEvent {
-  return { id: `evt-${state.revision + 1}`, at, type, detail };
+  return { id: `evt-${state.events.length + 1}`, at, type, detail };
 }
 
 function withTransition(
@@ -202,7 +204,7 @@ export function createInitialIncidentState(): IncidentState {
     remediationOptions: [],
     rollbackProgress: ROLLBACK_NODES.map((item) => ({ ...item })),
     recoveryChecks: [],
-    events: [],
+    events: [{ id: "evt-1", at: "09:41:07", type: "incident_created", detail: "SEV-1 incident created" }],
     revision: 0,
   };
 }
@@ -213,6 +215,19 @@ export function transitionIncident(
   at = new Date().toISOString(),
 ): IncidentState {
   return withTransition(state, next, "state_transition", `${state.state} → ${next}`, at);
+}
+
+export function recordInvestigationEvent(
+  state: IncidentState,
+  type: string,
+  detail: string,
+  at = new Date().toISOString(),
+): IncidentState {
+  return {
+    ...state,
+    revision: state.revision + 1,
+    events: [...state.events, event(state, type, detail, at)],
+  };
 }
 
 export function establishInvestigationRecords(state: IncidentState, at = new Date().toISOString()): IncidentState {
@@ -244,13 +259,27 @@ export function establishInvestigationRecords(state: IncidentState, at = new Dat
     { id: "remediation-rollback", action: "rolling_rollback", label: "Rolling rollback v2.8.14 → v2.8.13", status: "preferred", permitted: true, score: 0.96, rationale: "Removes the supported root cause without restarting the database." },
     { id: "remediation-db-restart", action: "restart_postgresql", label: "Restart PostgreSQL", status: "prohibited", permitted: false, score: 0, rationale: "Explicitly prohibited by the human operator constraint." },
   ];
+  const investigationEvents: Array<[string, string]> = [
+    ["investigation_started", "Incident investigation started"],
+    ["evidence_app_abnormality", "checkout-api v2.8.14 shows abnormal connection-pool behavior"],
+    ["evidence_postgresql_distress", "db-primary connection pressure and CPU distress observed"],
+    ["evidence_database_contradiction", "No PostgreSQL/database change occurred in the release window"],
+    ["root_cause_supported", "checkout-api v2.8.14 supported as root cause; PostgreSQL classified as downstream victim"],
+    ["investigation_completed", "Evidence correlation and hypothesis evaluation completed"],
+  ];
+  const existingEventTypes = new Set(state.events.map((item) => item.type));
+  const events = investigationEvents.reduce((items, [type, detail]) => {
+    if (existingEventTypes.has(type)) return items;
+    const snapshot = { ...state, events: items };
+    return [...items, event(snapshot, type, detail, at)];
+  }, state.events);
   return {
     ...state,
     evidence,
     hypotheses,
     remediationOptions,
     revision: state.revision + 1,
-    events: [...state.events, event(state, "investigation_records_established", "Deterministic causal chain and hypothesis evaluations established", at)],
+    events,
   };
 }
 
@@ -309,14 +338,18 @@ export function proposeRollback(
     );
   }
 
-  return transitionIncident(state, "ROLLBACK_PROPOSED", at);
+  const next = transitionIncident(state, "ROLLBACK_PROPOSED", at);
+  next.events[next.events.length - 1].type = "remediation_proposed";
+  return next;
 }
 
 export function requestAuthorization(
   state: IncidentState,
   at = new Date().toISOString(),
 ): IncidentState {
-  return transitionIncident(state, "AWAITING_HUMAN_AUTHORIZATION", at);
+  const next = transitionIncident(state, "AWAITING_HUMAN_AUTHORIZATION", at);
+  next.events[next.events.length - 1].type = "authorization_requested";
+  return next;
 }
 
 export function authorizeRollback(
@@ -324,6 +357,7 @@ export function authorizeRollback(
   at = new Date().toISOString(),
 ): IncidentState {
   const next = transitionIncident(state, "AUTHORIZED", at);
+  next.events[next.events.length - 1].type = "authorization_approved";
   return {
     ...next,
     authorization: {
@@ -341,7 +375,9 @@ export function executeRollingRollback(
   at = new Date().toISOString(),
 ): IncidentState {
   assertActionAllowed(state, "execute_rolling_rollback");
-  return transitionIncident(state, "ROLLING_BACK", at);
+  const next = transitionIncident(state, "ROLLING_BACK", at);
+  next.events[next.events.length - 1].type = "rollback_started";
+  return next;
 }
 
 export function recordRollbackNode(
@@ -365,13 +401,40 @@ export function recordRollbackNode(
   };
 }
 
+export function beginRecoveryVerification(
+  state: IncidentState,
+  at = new Date().toISOString(),
+): IncidentState {
+  if (state.state !== "ROLLING_BACK" || state.rollback.completedNodes.length !== 3) {
+    throw new IncidentGuardError(
+      "ROLLBACK_INCOMPLETE",
+      "Recovery verification requires all three application nodes to be rolled back.",
+    );
+  }
+
+  return withTransition(
+    state,
+    "RECOVERY_VERIFYING",
+    "recovery_verification_started",
+    "Checking deterministic recovery thresholds",
+    at,
+  );
+}
+
 export function verifyRecovery(
   state: IncidentState,
   metrics: RecoveryMetrics,
   at = new Date().toISOString(),
 ): IncidentState {
-  if (state.state !== "ROLLING_BACK") {
+  if (state.state !== "ROLLING_BACK" && state.state !== "RECOVERY_VERIFYING") {
     throw new IncidentGuardError("ROLLBACK_NOT_ACTIVE", "Recovery cannot be verified before rollback.");
+  }
+
+  if (state.rollback.completedNodes.length !== 3) {
+    throw new IncidentGuardError(
+      "ROLLBACK_INCOMPLETE",
+      "Recovery cannot be verified before all three application nodes are rolled back.",
+    );
   }
 
   const recoveryChecks: RecoveryCheck[] = (Object.keys(state.thresholds) as Array<keyof RecoveryMetrics>).map((metric) => ({
@@ -396,5 +459,7 @@ export function closeIncident(
   state: IncidentState,
   at = new Date().toISOString(),
 ): IncidentState {
-  return transitionIncident(state, "INCIDENT_CLOSED", at);
+  const next = transitionIncident(state, "INCIDENT_CLOSED", at);
+  next.events[next.events.length - 1].type = "incident_sealed";
+  return next;
 }

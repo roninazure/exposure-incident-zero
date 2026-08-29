@@ -17,7 +17,7 @@ test("every incident stage maps deterministically to the Horizon state", () => {
   const expected = {
     ACTIVE_INCIDENT: "MIDNIGHT", INVESTIGATED: "DAWN_OF_INVESTIGATION", ROOT_CAUSE_SUPPORTED: "ROOT_CAUSE_REVEALED",
     DATABASE_RESTART_FORBIDDEN: "ROOT_CAUSE_REVEALED", ROLLBACK_PROPOSED: "AMBER_AUTHORIZATION",
-    AWAITING_HUMAN_AUTHORIZATION: "AMBER_AUTHORIZATION", AUTHORIZED: "GOLDEN_REMEDIATION", ROLLING_BACK: "GOLDEN_REMEDIATION",
+    AWAITING_HUMAN_AUTHORIZATION: "AMBER_AUTHORIZATION", AUTHORIZED: "GOLDEN_REMEDIATION", ROLLING_BACK: "GOLDEN_REMEDIATION", RECOVERY_VERIFYING: "DAYLIGHT_RECOVERY",
     RECOVERY_VERIFIED: "DAYLIGHT_RECOVERY", INCIDENT_CLOSED: "DUSK_INCIDENT_SEALED",
   };
   for (const [stage, horizonState] of Object.entries(expected)) assert.equal(horizon.deriveHorizonState(incident(stage)), horizonState);
@@ -33,7 +33,7 @@ test("execution progress exposes visual node progression without mutating domain
   const base = incident("ROLLING_BACK");
   const visual = horizon.getHorizonVisual(base);
   assert.equal(visual.state, "GOLDEN_REMEDIATION");
-  assert.equal(visual.lightPosition, "right");
+  assert.equal(visual.lightPosition, "center");
   assert.equal(base.state, "ROLLING_BACK");
 });
 
