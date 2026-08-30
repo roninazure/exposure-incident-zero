@@ -1,6 +1,14 @@
+<p align="center">
+  <img src="docs/assets/exposure-incident-zero.png"
+       alt="Exposure // Incident Zero"
+       width="100%">
+</p>
+
 # EXPOSURE // INCIDENT ZERO
 
 **Governed AI incident response through WebMCP.**
+
+> **Give AI the ability to operate infrastructure without giving AI unrestricted control of infrastructure.**
 
 Exposure lets an AI agent investigate an infrastructure incident, establish safety constraints, propose remediation, request human authorization, execute an approved remediation, and verify recovery—without giving the AI unrestricted control of infrastructure.
 
@@ -39,8 +47,6 @@ Exposure registers these browser-native capabilities through WebMCP:
 - Exposure governs what the agent is allowed to do.
 - The AI cannot self-authorize consequential remediation.
 - Human approval remains required.
-
-**Exposure gives AI the ability to operate infrastructure without giving AI unrestricted control of infrastructure.**
 
 ## Architecture
 
